@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ thống Quản lý - Study Tracker</title>
+    <!-- Liên kết tới file CSS riêng cho trang này -->
+    <link rel="stylesheet" href="../style/product-manager.css">
+</head>
+
+<body>
+
+    <!-- ================================================================
+         LAYOUT CHÍNH: Chia đôi màn hình thành sidebar trái + nội dung phải
+    ================================================================ -->
+    <div class="container">
+
+        <!-- ============================================================
+             SIDEBAR - Thanh điều hướng bên trái
+        ============================================================ -->
+        <aside class="sidebar">
+
+            <!-- Logo và tên ứng dụng -->
+            <div class="sidebar-header">
+                <img src="../assets/icons/re.png" alt="">
+                <div>
+                    <div class="brand">Study Tracker</div>
+                    <div class="sub-brand">Quản lý tiến độ học tập</div>
+                </div>
+            </div>
+
+            <!-- Menu điều hướng:
+                 - Quản lý môn học (link tới category-manager.html)
+                 - Quản lý bài học (trang hiện tại, được làm nổi bật bằng class "hight")
+            -->
+            <nav class="menu">
+                <div>
+                    <li class="menu-item">
+                        <span class="icon"><img src="../assets/icons/Notebook.png" alt=""></span>
+                        <a href="./category-manager.html">Quản lý môn học</a>
+                    </li>
+                    <!-- class="hight" đánh dấu đây là trang đang active (đổi màu nền + chữ xanh) -->
+                    <li class="menu-item hight">
+                        <span class="icon"><img src="../assets/icons/Document duplicate.png" alt=""></span>
+                        <a href="./product-manager.html">Quản lý bài học</a>
+                    </li>
+                </div>
+            </nav>
+        </aside>
+        <!-- /SIDEBAR -->
+
+        <!-- ============================================================
+             NỘI DUNG CHÍNH - Header + Main
+        ============================================================ -->
+        <div class="main-content">
+
+            <!-- HEADER: Chứa nút toggle menu và thông tin người dùng -->
+            <header class="header">
+
+                <!-- Bên trái header: nút mở/đóng sidebar (hiện tại chưa có logic JS) -->
+                <div class="header-left">
+                    <button class="menu-toggle">
+                        <img src="../assets/icons/Icon button.png" alt="">
+                    </button>
+                </div>
+
+                <!-- Bên phải header: các icon tiện ích + avatar người dùng -->
+                <div class="header-right">
+                    <div class="user-box">
+
+                        <!-- Nhóm icon hành động (thông báo, cài đặt, v.v.) -->
+                        <div class="user-info">
+                            <img class="name" src="../assets/icons/Icon button (1).png">
+                            <img class="name" src="../assets/icons/Icon button (2).png">
+                            <img class="name" src="../assets/icons/Icon button (3).png" alt="">
+                        </div>
+
+                        <!-- Avatar: click → toggle menu con "Đăng xuất"
+                             JS lắng nghe sự kiện click qua id="avatar" -->
+                        <div class="avatar" id="avatar">
+                            <img src="../assets/images/Avatar w. photo.png" alt="">
+
+                            <!-- Menu con "Đăng xuất": mặc định ẩn (display:none)
+                                 Hiện/ẩn được điều khiển bởi JS khi click avatar -->
+                            <div class="logout-menu" style="display: none;" id="logoutMenu">
+                                <!-- Click nút này → JS mở modal xác nhận đăng xuất -->
+                                <button id="logoutBtn">Đăng xuất</button>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </header>
+            <!-- /HEADER -->
+
+            <!-- =========================================================
+                 MAIN: Vùng nội dung chính hiển thị bảng bài học
+            ========================================================= -->
+            <main class="main">
+
+                <!-- Tiêu đề trang + Thanh công cụ (tìm kiếm, lọc, thêm mới) -->
+                <div class="main-header">
+                    <h2>Bài học</h2>
+
+                    <div class="actions">
+                        <!-- Ô tìm kiếm: JS lắng nghe sự kiện "input" (gõ từng ký tự)
+                             id="search-input" được dùng trong filterAndSearchLessons() -->
+                        <input type="text"
+                               id="search-input"
+                               placeholder="Tìm kiếm tên bài học..."
+                               style="padding: 8px 12px; border: 1px solid #e2e8f0; border-radius: 6px; width: 220px;">
+
+                        <!-- Dropdown lọc theo môn học:
+                             Các <option> được tạo động bởi JS (renderSubjectFilter)
+                             id="filter-subject" dùng trong filterAndSearchLessons() -->
+                        <select class="content-selection" id="filter-subject">
+                            <option value="all">Lọc theo môn học</option>
+                            <!-- JS sẽ inject thêm <option> vào đây -->
+                        </select>
+
+                        <!-- Dropdown lọc theo trạng thái hoàn thành:
+                             value="all"      → hiện tất cả
+                             value="done"   → chỉ Đã hoàn thành
+                             value="notDone" → chỉ Chưa hoàn thành
+                             id="filter-status" dùng trong filterAndSearchLessons() -->
+                        <select class="content-selection" id="filter-status">
+                            <option value="all">Tất cả trạng thái</option>
+                            <option value="done">Đã hoàn thành</option>
+                            <option value="notDone">Chưa hoàn thành</option>
+                        </select>
+
+                        <!-- Nút "Thêm mới": JS click → openModal(modalAddElement)
+                             id="btnAdd" được gắn sự kiện trong product-manager.js -->
+                        <button class="btn" id="btnAdd">Thêm mới</button>
+                    </div>
+                </div>
+                <!-- /main-header -->
+
+                <!-- =====================================================
+                     BẢNG DỮ LIỆU BÀI HỌC
+                ===================================================== -->
+                <table>
+                    <thead>
+                        <tr>
+                            <!-- Checkbox "Chọn tất cả": khi tick/bỏ tick
+                                 JS sẽ đổi trạng thái tất cả bài học trên trang hiện tại
+                                 Selector: "thead input[type='checkbox']" -->
+                            <th><input type="checkbox"></th>
+
+                            <!-- Tiêu đề cột (mũi tên hiện tại là trang trí, chưa có sort JS) -->
+                            <th>Tên bài học <span><img src="../assets/icons/arrow-down.png" alt=""></span></th>
+                            <!-- Cột Môn học: hiển thị tên môn học của bài học (lấy theo categoryId từ "lists" trong localStorage) -->
+                            <th>Môn học</th>
+                            <th>Thời gian <span><img src="../assets/icons/arrow-down.png" alt=""></span></th>
+                            <th>Trạng thái</th>
+                            <th>Chức năng</th>
+                        </tr>
+                    </thead>
+
+                    <!-- tbody rỗng: JS sẽ inject toàn bộ hàng <tr> vào đây
+                         thông qua tableTbodyElement.innerHTML = html
+                         trong hàm renderLesson() -->
+                    <tbody id="tbody"></tbody>
+                </table>
+                <!-- /table -->
+
+                <!-- =====================================================
+                     THANH PHÂN TRANG
+                ===================================================== -->
+                <div class="st-pagination">
+                    <!-- Nút ← Trang trước: JS gọi changePage(currentPage - 1)
+                         Tự động disabled khi ở trang đầu -->
+                    <button class="st-pag-btn" id="btn-prev">&#8592;</button>
+
+                    <!-- Vùng chứa các nút số trang (1, 2, 3, ... , n):
+                         JS inject vào đây qua renderPagination()
+                         Các nút được tạo động dựa theo tổng số trang -->
+                    <div id="button-number" class="st-button-number"></div>
+
+                    <!-- Nút → Trang tiếp: JS gọi changePage(currentPage + 1)
+                         Tự động disabled khi ở trang cuối -->
+                    <button class="st-pag-btn" id="btn-next">&#8594;</button>
+                </div>
+
+            </main>
+            <!-- /MAIN -->
+
+        </div>
+        <!-- /main-content -->
+
+    </div>
+    <!-- /container -->
+
+
+    <!-- ================================================================
+         OVERLAY: Lớp nền tối mờ phủ lên toàn màn hình khi modal mở
+         Mặc định ẩn (display:none), JS điều khiển trong openModal/closeModal
+    ================================================================ -->
+    <div id="overlay" class="overlay"></div>
+
+
+    <!-- ================================================================
+         MODAL THÊM MỚI BÀI HỌC
+         - Mở khi click nút "Thêm mới" (id="btnAdd")
+         - Đóng khi click × (id="closeIcon") hoặc "Hủy" (id="closeCancel")
+         - Thêm bài học khi click "Thêm" (id="btnAddLesson")
+    ================================================================ -->
+    <div id="modal-add" class="modal">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h3>Thêm mới bài học</h3>
+                <!-- Nút × đóng modal: JS gắn sự kiện qua id="closeIcon" -->
+                <span class="close" id="closeIcon">&times;</span>
+            </div>
+
+            <div class="modal-body">
+                <!-- Input tên bài học: id="nameSubject" được JS đọc và validate -->
+                <label>Tên bài học</label>
+                <input type="text" id="nameSubject" placeholder="Session 10 - Cấu trúc điều khiển">
+                <!-- Span hiển thị lỗi tên: JS gán textContent qua id="error-name" -->
+                <span id="error-name" style="color: red;"></span>
+
+                <!-- Dropdown môn học: id="subjectName"
+                     Các <option> được inject động bởi renderSubjectFilter() -->
+                <label>Loại môn học</label>
+                <select id="subjectName">
+                    <option value="">-- Chọn môn học --</option>
+                    <!-- JS inject thêm <option> vào đây -->
+                </select>
+                <!-- Span hiển thị lỗi môn học -->
+                <span id="error-subject" style="color: red;"></span>
+
+                <!-- Input thời lượng học (số phút):
+                     type="number" chỉ nhận số; JS validate > 0 -->
+                <label>Thời gian học</label>
+                <input type="number" id="numberSubject" placeholder="45">
+                <!-- Span hiển thị lỗi thời lượng -->
+                <span id="error-number" style="color: red;"></span>
+            </div>
+
+            <div class="modal-footer">
+                <!-- Nút "Hủy": JS gắn sự kiện qua id="closeCancel" → gọi resetAddForm() -->
+                <button class="btn-cancel" id="closeCancel">Hủy</button>
+                <!-- Nút "Thêm": JS gắn sự kiện qua id="btnAddLesson" → validate + thêm mới -->
+                <button class="btn-submit" id="btnAddLesson">Thêm</button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /modal-add -->
+
+
+    <!-- ================================================================
+         MODAL CHỈNH SỬA BÀI HỌC
+         - Mở khi click nút sửa trên từng hàng bảng (gọi handleEdit(id))
+         - Đóng khi click × (id="iconEdit") hoặc "Hủy" (id="btnCancelEdit")
+         - Lưu thay đổi khi click "Lưu" (id="btnSave")
+    ================================================================ -->
+    <div id="modal-edit" class="modal">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h3>Cập nhật bài học</h3>
+                <!-- Nút × đóng modal: JS gắn sự kiện qua id="iconEdit" -->
+                <span class="close-edit" id="iconEdit">&times;</span>
+            </div>
+
+            <!-- Nhóm input chính: tên, môn học, thời lượng -->
+            <div class="modal-body">
+                <!-- Input tên bài học (sửa): JS điền giá trị cũ vào khi mở modal -->
+                <label>Tên bài học</label>
+                <input id="edit-name" type="text" style="margin-bottom: 10px;">
+                <!-- Span hiển thị lỗi tên (edit) -->
+                <span id="error-name-edit" style="color: red;"></span><br>
+
+                <!-- Dropdown môn học (sửa): inject bởi renderSubjectFilter()
+                     JS tự động chọn đúng môn học hiện tại khi mở modal -->
+                <label>Môn học</label>
+                <select id="edit-subject" style="margin-bottom: 10px;">
+                    <option value="">-- Chọn môn học --</option>
+                </select>
+                <!-- Span hiển thị lỗi môn học (edit) -->
+                <span id="error-subject-edit" style="color: red;"></span><br>
+
+                <!-- Input thời lượng (sửa): JS điền giá trị cũ và validate > 0 -->
+                <label>Thời lượng (phút)</label>
+                <input id="edit-number" type="number" style="margin-bottom: 10px;">
+                <!-- Span hiển thị lỗi thời lượng (edit) -->
+                <span id="error-number-edit" style="color: red;"></span><br>
+            </div>
+
+            <!-- Nhóm radio: chọn trạng thái hoàn thành -->
+            <div class="modal-body">
+                <label>Trạng thái</label>
+                <div class="radio-group">
+                    <label class="radio-container">
+                        <input type="radio" name="status-edit" value="done" checked>
+                        Đã hoàn thành
+                    </label>
+                    <label class="radio-container">
+                        <input type="radio" name="status-edit" value="notDone">
+                        Chưa hoàn thành
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <!-- Nút "Hủy": JS gắn sự kiện qua id="btnCancelEdit" → đóng modal -->
+                <button class="btn-cancel-edit" id="btnCancelEdit">Hủy</button>
+                <!-- Nút "Lưu": JS gắn sự kiện qua id="btnSave" → validate + lưu thay đổi -->
+                <button class="btn-submit" id="btnSave">Lưu</button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /modal-edit -->
+
+
+    <!-- ================================================================
+         MODAL XÁC NHẬN XÓA BÀI HỌC
+         - Mở khi click nút xóa trên từng hàng bảng (gọi handleDelete(id))
+         - Tên bài học được hiển thị qua <b id="subjectText">
+         - Đóng khi click "Hủy" (id="closeCancelDelete")
+         - Xóa khi click "Xóa" (id="btnDelete")
+    ================================================================ -->
+    <div id="modal-delete" class="modal">
+        <div class="modal-content">
+
+            <!-- Icon cảnh báo (⚠) -->
+            <div class="modal-header">
+                <div class="delete-warn-icon">⚠</div>
+            </div>
+
+            <div class="modal-body">
+                <h3 style="margin-bottom:6px;">Xác nhận</h3>
+                <p style="font-size:14px;color:#374151;">
+                    Bạn có chắc muốn xoá bài học
+                    <!-- JS gán tên bài học vào đây qua subjectTextElement.textContent -->
+                    <b id="subjectText" style="color:#3b82f6;"></b>
+                    khỏi hệ thống không?
+                </p>
+            </div>
+
+            <hr style="margin:12px 0;">
+
+            <div class="modal-footer">
+                <!-- Nút "Hủy": JS gắn sự kiện qua id="closeCancelDelete" → đóng modal -->
+                <button class="btn-cancel-delete" id="closeCancelDelete">Hủy</button>
+                <!-- Nút "Xóa": JS gắn sự kiện qua id="btnDelete"
+                     → xóa bài học có id=idDelete khỏi mảng lessons và localStorage -->
+                <button class="btn-delete" id="btnDelete">Xoá</button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /modal-delete -->
+
+
+    <!-- ================================================================
+         MODAL XÁC NHẬN ĐĂNG XUẤT
+         - Mở khi click nút "Đăng xuất" trong menu con avatar
+         - Đóng khi click × (.close-logout) hoặc "Hủy" (.logout-cancel)
+         - Xác nhận khi click "Đăng xuất" (.logout-confirm) → redirect sang register.html
+    ================================================================ -->
+    <div class="modal modal-logout">
+        <div class="modal-content">
+
+            <div class="modal-header">
+                <h3>Xác nhận đăng xuất</h3>
+                <!-- Nút ×: JS selector ".close-logout" gắn sự kiện closeLogoutModal -->
+                <span class="close-logout">&times;</span>
+            </div>
+
+            <div class="modal-body modal-logout-body">
+                <p>Bạn có chắc muốn đăng xuất không?</p>
+            </div>
+
+            <div class="modal-footer modal-logout-footer">
+                <!-- Nút "Hủy": JS selector ".logout-cancel" → đóng modal -->
+                <button class="btn-cancel logout-cancel">Hủy</button>
+                <!-- Nút "Đăng xuất": JS selector ".logout-confirm"
+                     → window.location.href = "./register.html" -->
+                <button class="btn-delete logout-confirm">Đăng xuất</button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /modal-logout -->
+
+    <!--
+         TOAST CONTAINER: Vùng chứa các thông báo nổi góc trên phải
+         JS inject <div class="toast"> vào đây qua showToast()
+         Mặc định rỗng, toast được tạo và xóa động
+    -->
+    
+    <div id="toast-container" class="toast-container"></div>
+
+
+    <!-- Load file JS chứa toàn bộ logic của trang
+         Đặt cuối <body> để đảm bảo DOM đã được parse đầy đủ trước khi JS chạy -->
+    <script src="../js/product-manager.js"></script>
+
+</body>
+
+</html>
